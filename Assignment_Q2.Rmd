@@ -1,0 +1,313 @@
+---
+title: "Assignment_Q2"
+output: html_document
+date: "2023-12-06"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r Packages, include = FALSE}
+#Run this line first
+#install.packages(c("ggplot2", "palmerpenguins", "janitor", "dplyr", "svglite", "cocor"))
+library(ggplot2)
+library(palmerpenguins)
+library(janitor)
+library(dplyr)
+library(svglite)
+library(cocor)
+```
+
+```{r Loading in function definitions}
+source("functions/cleaning.R")
+source("functions/plotting.R")
+```
+
+## QUESTION 2: Data Pipeline
+
+*Write a data analysis pipeline in your .rmd RMarkdown file. You should be aiming to write a clear explanation of the steps, the figures visible, as well as clear code.*
+
+*Your code should include the steps practiced in the lab session:*
+
+-   *Load the data*
+
+-   *Appropriately clean the data*
+
+-   *Create an Exploratory Figure (**not a boxplot**)*
+
+-   *Save the figure*
+
+-   ***New**: Run a statistical test*
+
+-   ***New**: Create a Results Figure*
+
+-   *Save the figure*
+
+*An exploratory figure shows raw data, such as the distribution of the data. A results figure demonstrates the stats method chosen, and includes the results of the stats test.*
+
+*Between your code, communicate clearly what you are doing and why.*
+
+*Your text should include:*
+
+-   *Introduction*
+
+-   *Hypothesis*
+
+-   *Stats Method*
+
+-   *Results*
+
+-   *Discussion*
+
+-   *Conclusion*
+
+*You will be marked on the following:*
+
+### a) Your code for readability and functionality
+
+### b) Your figures for communication
+
+### c) Your text communication of your analysis
+
+
+------------------------------------------------------------------------
+
+### Introduction
+The palmer penguins data set provides a lot of information, such as species, nesting observations and trait measurements. But for my assignment I am interested in looking at whether there is an *association* between any of the variables. I decided to look at culmen length and depth because they are characteristics of the same structure, therefore I expect that there will be a correlation between them.
+
+
+
+## Cleaning the raw data
+```{r Cleaning data}
+#Checking the raw data
+head(penguins_raw)
+
+#Saving the raw data
+#write.csv(penguins_raw, "data/penguins_raw.csv")
+
+
+#Cleaning the raw data and saving it as a new clean data set
+penguins_clean <- penguins_raw %>% 
+    clean_column_names() %>%
+    shorten_species() %>%
+    remove_empty_columns_rows()
+
+
+#Checking the cleaned data
+head(penguins_clean)
+
+#Saving the clean data
+#write.csv(penguins_clean, "data/penguins_clean.csv")
+```
+
+The raw data has been cleaned using three functions, which can be found in the "cleaning.R" script. I have then saved the cleaned data in the "data" file as "penguins_clean.csv". This gives me a smaller, modified data set that has only the data I am interested in looking at.
+
+
+
+```{r Data Exploration}
+#Filtering the clean data for culmen length and culmen depth
+culmen_dims <- subset_columns(penguins_clean, c("culmen_length_mm", "culmen_depth_mm")) %>%
+  remove_NA()
+head(culmen_dims)
+
+#Saving the filtered data
+#write.csv(culmen_dims, "data/culmen_dims.csv")
+
+#Plotting a scatter graph to see if there is any association between culmen depth and length
+culmen_basic_plot <- plot_culmen_basic(culmen_dims)
+culmen_basic_plot
+
+#Saving the exploratory figure
+#save_culmen_explore1_svg(culmen_dims, 
+                      #"figures/fig01_exp_vector.svg", 
+                      #size = 20, scaling = 1)
+```
+
+Here I have filtered out the data corresponding to culmen length and culmen depth, cleaning the data further by removing rows containing "NA". I then plotted culmen depth against culmen length in a scatter graph to see if there is any relationship between the two variables.
+
+There doesn't appear to be any association between culmen length and depth. However, the original dataset consisted of three species, therefore any trend may be present when looking at each species separately. 
+
+The figure has been saved in the "figures" file as "fig01_exp_vector.svg".
+
+
+
+```{r Data exploration continued}
+#Filtering the clean data for culmen length and depth, and now species too
+culmen_and_species <- subset_columns(penguins_clean, c("culmen_length_mm", "culmen_depth_mm", "species")) %>%
+  remove_NA()
+head(culmen_and_species)
+
+#Saving the filtered data
+#write.csv(culmen_and_species, "data/culmen_and_species.csv")
+
+#Plotting the exploratory figure, now accounting for species
+culmen_scatter_no_reg <- plot_culmen_no_reg(culmen_and_species)
+culmen_scatter_no_reg
+
+#Saving the figure
+#save_culmen_explore2_svg(culmen_and_species, 
+                      #"figures/fig02_exp_vector.svg", 
+                      #size = 20, scaling = 1)
+```
+
+Having now separated the culmen length & depth data into different species, there definitely appears to be an association between the two traits *within* each species. From first glance, I expect to see that there is a weak positive correlation between culmen length and culmen depth within each species.
+
+This figure has been saved as "fig02_exp_vector.svg".
+
+
+
+### Hypothesis
+**H0:** There is no correlation between the culmen length and depth (r = 0).
+
+**H1:** There is a correlation between the culmen length and depth (r ≠ 0).
+
+
+
+### Statistical Methods
+```{r Separating the data by species}
+###Filtering the clean data for culmen length and depth, and now for each individual species too. 
+#Adelie
+culmen_adelie <- subset_columns(penguins_clean, c("culmen_length_mm", "culmen_depth_mm", "species")) %>%
+          filter_by_species("Adelie") %>%
+         remove_NA()
+head(culmen_adelie)
+
+#Saving data
+#write.csv(culmen_adelie, "data/culmen_adelie.csv")
+
+
+#Chinstrap
+culmen_chinstrap <- subset_columns(penguins_clean, c("culmen_length_mm", "culmen_depth_mm", "species")) %>%
+          filter_by_species("Chinstrap") %>%
+         remove_NA()
+head(culmen_chinstrap)
+
+#Saving data
+#write.csv(culmen_chinstrap, "data/culmen_chinstrap.csv")
+
+
+#Gentoo
+culmen_gentoo <- subset_columns(penguins_clean, c("culmen_length_mm", "culmen_depth_mm", "species")) %>%
+          filter_by_species("Gentoo") %>%
+         remove_NA()
+head(culmen_gentoo)
+
+#Saving data
+#write.csv(culmen_gentoo, "data/culmen_gentoo.csv")
+```
+
+Here, I have separated out the different species from the data set so that I can run a statistical test on each individually.
+
+
+
+```{r Correlation coefficient}
+###Calculating the correlation coefficient, lumping all species into one
+cor_all <- cor.test(culmen_and_species$culmen_length_mm, culmen_and_species$culmen_depth_mm) 
+cor_all
+all_r <- "r = -0.235" #The output coefficient, I will put this into a results figure
+
+###Calculating 'r' for each individual species
+#Adelie
+cor_adelie <- cor.test(culmen_adelie$culmen_length_mm, culmen_adelie$culmen_depth_mm) 
+cor_adelie
+
+#Saving the coefficient to make comparisons with other species
+r_adelie <- cor(culmen_adelie$culmen_length_mm, culmen_adelie$culmen_depth_mm)
+
+#Chinstrap
+cor_chinstrap <- cor.test(culmen_chinstrap$culmen_length_mm, culmen_chinstrap$culmen_depth_mm) 
+cor_chinstrap
+r_chinstrap <- cor(culmen_chinstrap$culmen_length_mm, culmen_chinstrap$culmen_depth_mm) 
+
+#Gentoo
+cor_gentoo <- cor.test(culmen_gentoo$culmen_length_mm, culmen_gentoo$culmen_depth_mm) 
+cor_gentoo
+r_gentoo <- cor(culmen_gentoo$culmen_length_mm, culmen_gentoo$culmen_depth_mm)
+```
+
+Here, I have run various statistical tests. I first ran a test to calculate the correlation coefficient for the data as one group. From the output, I am interested in the correlation coefficient and the p-value. I also conducted the same test on the data for each species.
+
+
+```{r Comparing coefficients}
+###Testing to see if there are significant differences between 'r' of each species
+#The inputs required are (i) r for species i, (ii) r for species j, (iii) pop size for species i, (iv) pop size for species j
+
+#Adelie & chinstrap
+cocor.indep.groups(r_adelie, r_chinstrap, 151,68)
+
+#Adelie & gentoo
+cocor.indep.groups(r_adelie, r_gentoo, 151,123)
+
+#Gentoo & chinstrap
+cocor.indep.groups(r_gentoo, r_chinstrap, 123,68)
+```
+
+Here, I compared the correlation coefficient obtained from each species to see if there is a significant difference between each pair of coefficients.
+
+
+
+### Results & Discussion
+```{r Plotting Results}
+#Creating a data frame of the species' correlation coefficients to add to my figure
+r_list <- data.frame(label = c("r = 0.391","r = 0.654","r = 0.643"), #The r values from each species
+                     species = names(table(culmen_and_species$species)), #Inputting species information
+                     x = c(37,37,37), #x coordinates
+                     y = c(13,13,13)) #y coordinates
+
+
+#Correlation all together - no species considered
+culmen_scatter_one_reg <- plot_culmen_one_reg(culmen_and_species,
+                                              all_r)
+culmen_scatter_one_reg
+
+#Saving the results figure
+#save_culmen_results1_svg(culmen_and_species,
+                         #all_r,
+                         #"figures/fig01_res_vector.svg",
+                         #size = 20, scaling = 1)
+
+#Correlation by species
+culmen_scatter_by_species <- plot_culmen_three_reg(culmen_and_species,
+                                                   r_list)
+culmen_scatter_by_species
+
+#Saving the results figure
+#save_culmen_results2_svg(culmen_and_species,
+                        #r_list,
+                      #"figures/fig02_res_vector.svg", 
+                      #size = 20, scaling = 1)
+```
+
+When calculating the correlation coefficient for this data as a single group, the output was r = -0.235 with a p-value of < 0.001. So, by not accounting for the presence of distinct species there would appear to be a weak negative correlation between culmen length and culmen depth. The corresponding graph was saved as "fig01_res_vector.svg".
+
+However, when accounting for the presence of species, looking at the correlation between length and depth in each species reverse the correlation seen when they are combined:
+
+* Adelie:
+  + r = 0.391
+  + p < 0.001
+
+* Chinstrap:
+  + r = 0.654
+  + p < 0.001
+
+* Gentoo:
+  + r = 0.643
+  + p < 0.001
+
+This change in correlation is called "Simpson's paradox" -- correlations appear in different groups but reverses or is lost when they are combined. The corresponding graph was saved as "fig02_res_vector.svg".
+
+Using statistical tests and appropriate data presentation, I have found that there *is* a significant positive correlation between culmen length and culmen depth. Therefore, there is sufficient evidence to reject the null hypothesis and to accept my hypothesis there is a correlation between culmen length and depth.
+
+I also conducted further analysis to see if there is a significant difference between the correlation coefficient obtained from each species. The p-values obtained were:
+
+* Adelie & Chinstrap - p = 0.013
+* Adelie & Gentoo - p = 0.004
+* Gentoo & Chinstrap - p = 0.909
+
+Therefore, the correlation between culmen length and depth is significant weaker in Adelie penguins than in Chinstrap and Gentoo penguins. However, there is no significant difference in correlation between Chinstrap and Gentoo penguins.
+
+
+
+### Conclusion
+When looking at a dataset in its entirety, one may begin to make assumptions on the relationship between variables based on first impressions. However, taking data at face value may be detrimental to the quality and reliability of your analyses. I have presented how subsetting data can reveal hidden information in a dataset, subverting initial expectations one may have. While there appeared to be a negative correlation between culmen length and culmen depth, once I took into account the presence of species in the data set the negative correlation was lost and I discovered a positive correlation between the two variables.
